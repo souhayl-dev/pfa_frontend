@@ -1,0 +1,163 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+
+  /* Warm paper background */
+  --color-sand-50: #fbf8f3;
+  --color-sand-100: #f5efe5;
+  --color-sand-200: #ebe1d1;
+  --color-sand-300: #dccdb5;
+
+  /* Text and dark surfaces */
+  --color-ink-300: #a9b3b0;
+  --color-ink-400: #84908d;
+  --color-ink-500: #63706d;
+  --color-ink-600: #47534f;
+  --color-ink-700: #303b38;
+  --color-ink-800: #1f2826;
+  --color-ink-900: #141b1a;
+
+  /* Terracotta: the action colour */
+  --color-brand-50: #fef4ee;
+  --color-brand-100: #fde5d6;
+  --color-brand-200: #fac7ac;
+  --color-brand-300: #f6a077;
+  --color-brand-400: #f17443;
+  --color-brand-500: #e8551f;
+  --color-brand-600: #d13f15;
+  --color-brand-700: #ad2f14;
+  --color-brand-800: #8a2817;
+  --color-brand-900: #712416;
+
+  /* Deep green: the hero and dark panels */
+  --color-pine-50: #eef7f4;
+  --color-pine-100: #d6ebe5;
+  --color-pine-200: #aed7cc;
+  --color-pine-400: #4fa393;
+  --color-pine-500: #2a8575;
+  --color-pine-600: #1b6a5e;
+  --color-pine-700: #14554c;
+  --color-pine-800: #0f403a;
+  --color-pine-900: #0b2e2a;
+  --color-pine-950: #071f1d;
+
+  --color-saffron-300: #fbd27a;
+  --color-saffron-400: #f7b93e;
+  --color-saffron-500: #ec9f17;
+
+  --shadow-card: 0 1px 2px rgb(20 27 26 / 0.04), 0 8px 24px -12px rgb(20 27 26 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(20 27 26 / 0.05), 0 24px 48px -20px rgb(20 27 26 / 0.28);
+  --shadow-glow: 0 12px 32px -10px rgb(232 85 31 / 0.55);
+
+  --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-fade: fade 0.25s ease-out both;
+  --animate-drift: drift 16s ease-in-out infinite alternate;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes drift {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(4%, -6%, 0) scale(1.15);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-sand-50 text-ink-900 antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+
+  button:not(:disabled),
+  [role="button"],
+  summary {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  /* Eight-pointed star tiling, drawn over listing artwork and dark panels. */
+  .zellige {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23fff' stroke-width='1'%3E%3Crect x='16' y='16' width='24' height='24'/%3E%3Crect x='16' y='16' width='24' height='24' transform='rotate(45 28 28)'/%3E%3Cpath d='M0 28h11M45 28h11M28 0v11M28 45v11'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 56px 56px;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-sand-100) 25%, var(--color-sand-200) 50%, var(--color-sand-100) 75%);
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dual-thumb price slider: two range inputs stacked on one track. */
+.range-dual {
+  @apply pointer-events-none absolute inset-x-0 top-1/2 h-0 w-full -translate-y-1/2 appearance-none bg-transparent;
+}
+.range-dual::-webkit-slider-thumb {
+  @apply pointer-events-auto h-5 w-5 cursor-grab appearance-none rounded-full border-2 border-brand-500 bg-white shadow-md;
+}
+.range-dual::-moz-range-thumb {
+  @apply pointer-events-auto h-5 w-5 cursor-grab rounded-full border-2 border-brand-500 bg-white shadow-md;
+}

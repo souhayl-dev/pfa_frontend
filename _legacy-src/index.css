@@ -1,0 +1,41 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-brand-50: #fdf2f0;
+  --color-brand-100: #fbe4e0;
+  --color-brand-200: #f6c8c0;
+  --color-brand-300: #eea296;
+  --color-brand-400: #e97b68;
+  --color-brand-500: #e0483e;
+  --color-brand-600: #c93a30;
+  --color-brand-700: #a52e26;
+  --color-brand-800: #7e2620;
+  --color-brand-900: #5f1f1c;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    @apply bg-white text-neutral-900 antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+}
+
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
