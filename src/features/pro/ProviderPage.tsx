@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Building2, LayoutGrid, MapPin, Plus, Store, Users } from "lucide-react";
 import { errorMessage } from "../../shared/api/http";
 import { ListingArt } from "../../shared/components/ListingArt";
-import { formatMoney } from "../../shared/lib/format";
+import { formatMoney, plural } from "../../shared/lib/format";
 import { LISTING_STATUS, LISTING_TYPE, MEMBER_ROLE, PROVIDER_STATUS } from "../../shared/lib/labels";
 import { Button } from "../../shared/ui/Button";
 import { Alert, Badge, EmptyState, Skeleton } from "../../shared/ui/Feedback";
@@ -12,12 +12,15 @@ import { Tabs } from "../../shared/ui/Tabs";
 import { canManageListings, useMemberships, useProvider, useProviderListings } from "./api";
 import { ListingForm } from "./ListingForm";
 import { ProviderForm } from "./ProviderForm";
+import { ProviderSummary } from "./ProviderSummary";
 import { TeamTab } from "./TeamTab";
+import { useProviderBookings } from "./useProviderBookings";
 
 type Tab = "listings" | "team" | "company";
 
 function ListingsTab({ providerId, canManage }: { providerId: string; canManage: boolean }) {
   const listings = useProviderListings(providerId);
+  const activity = useProviderBookings(listings.data ?? []);
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
 
@@ -41,7 +44,8 @@ function ListingsTab({ providerId, canManage }: { providerId: string; canManage:
         <EmptyState icon={Store} title="Aucune annonce pour le moment" text="Créez votre première annonce, ajoutez-y vos offres, puis mettez-la en ligne." action={createButton} />
       ) : (
         <>
-          <div className="mb-5 flex justify-end">{createButton}</div>
+          <ProviderSummary bookings={activity.bookings} loading={activity.loading} />
+          <div className="mt-6 mb-5 flex justify-end">{createButton}</div>
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {listings.data!.map((listing) => (
               <li key={listing.id}>
@@ -54,6 +58,11 @@ function ListingsTab({ providerId, canManage }: { providerId: string; canManage:
                     <Badge tone={LISTING_STATUS[listing.status].tone} className="absolute top-3 left-3 bg-white">
                       {LISTING_STATUS[listing.status].label}
                     </Badge>
+                    {(activity.pendingByListing.get(listing.id) ?? 0) > 0 && (
+                      <Badge tone="bg-amber-400 text-ink-900 ring-amber-500" className="absolute top-3 right-3">
+                        {plural(activity.pendingByListing.get(listing.id)!, "demande")} à traiter
+                      </Badge>
+                    )}
                   </div>
                   <div className="p-4">
                     <p className="text-xs font-bold tracking-widest text-ink-500 uppercase">{LISTING_TYPE[listing.type].label}</p>

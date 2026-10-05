@@ -1,3 +1,6 @@
+/** Every price on the platform is in Moroccan dirhams. */
+export const CURRENCY = "MAD";
+
 export function formatMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",

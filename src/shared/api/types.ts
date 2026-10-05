@@ -36,7 +36,6 @@ export interface User {
   profileImage: string | null;
   active: boolean;
   verified: boolean;
-  preferredCurrency: string;
   notificationsEnabled: boolean;
   roles: UserRole[];
   clientId: string | null;
@@ -197,7 +196,6 @@ export interface ListingRequest {
   latitude: number | null;
   longitude: number | null;
   timezone: string;
-  currency: string;
   phone: string | null;
   email: string | null;
   hotel?: HotelDetails;

@@ -155,6 +155,9 @@ function BookingCard({ booking }: { booking: Booking }) {
           <History className="h-4 w-4" aria-hidden />
           Historique
         </Button>
+        <Link to={`/bookings/${booking.id}`} className={buttonClass("outline", "sm")}>
+          Détails
+        </Link>
         {cancellable && (
           <Button variant="danger" size="sm" onClick={() => setModal("cancel")}>
             Annuler

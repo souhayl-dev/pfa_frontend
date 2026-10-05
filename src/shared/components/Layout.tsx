@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Briefcase, ChevronDown, LogOut, ShieldCheck, Ticket, UserRound } from "lucide-react";
+import { Briefcase, ChevronDown, Heart, LogOut, ShieldCheck, Ticket, UserRound } from "lucide-react";
 import { cn } from "../lib/cn";
-import { initials } from "../lib/format";
 import { isAdmin, useAuthStore } from "../stores/authStore";
+import { useFavoritesStore } from "../stores/favoritesStore";
 import { buttonClass } from "../ui/buttonClass";
 import { Toaster } from "../ui/Feedback";
+import { Avatar } from "./Avatar";
 
 export function Logo({ light }: { light?: boolean }) {
   return (
@@ -47,9 +48,7 @@ function UserMenu() {
         aria-haspopup="menu"
         className="flex items-center gap-2 rounded-full border border-sand-300 bg-white py-1 pr-2.5 pl-1 transition hover:shadow-card"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pine-800 text-xs font-bold text-white">
-          {initials(user.firstName, user.lastName)}
-        </span>
+        <Avatar firstName={user.firstName} lastName={user.lastName} image={user.profileImage} className="h-8 w-8 rounded-full text-xs" />
         <span className="hidden text-sm font-semibold sm:block">{user.firstName}</span>
         <ChevronDown className={cn("h-4 w-4 text-ink-500 transition", open && "rotate-180")} />
       </button>
@@ -88,6 +87,7 @@ function UserMenu() {
 
 export function Layout() {
   const user = useAuthStore((state) => state.user);
+  const favoriteCount = useFavoritesStore((state) => state.items.length);
   const location = useLocation();
 
   // A new page starts at its top; filters only change the query string, so they keep the scroll.
@@ -110,6 +110,20 @@ export function Layout() {
             >
               Explorer
             </NavLink>
+            <NavLink
+              to="/favorites"
+              aria-label={`Mes favoris (${favoriteCount})`}
+              className={({ isActive }) =>
+                cn("relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-sand-100", isActive ? "text-brand-600" : "text-ink-600")
+              }
+            >
+              <Heart className="h-5 w-5" aria-hidden />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-brand-500 px-1 text-[0.65rem] font-bold text-white">
+                  {favoriteCount}
+                </span>
+              )}
+            </NavLink>
             {user ? (
               <UserMenu />
             ) : (
@@ -117,9 +131,12 @@ export function Layout() {
                 <Link to="/login" state={{ from: location.pathname }} className={buttonClass("ghost", "sm")}>
                   Connexion
                 </Link>
-                <Link to="/register" className={buttonClass("dark", "sm")}>
+                {/* A phone has room for one account button; the login page links to sign-up. */}
+                <span className="hidden sm:block">
+                  <Link to="/register" className={buttonClass("dark", "sm")}>
                   Créer un compte
                 </Link>
+                </span>
               </>
             )}
           </nav>

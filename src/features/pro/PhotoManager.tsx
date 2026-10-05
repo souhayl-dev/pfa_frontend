@@ -4,7 +4,7 @@ import { ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
 import { errorMessage, http, resolveAssetUrl } from "../../shared/api/http";
 import type { Photo } from "../../shared/api/types";
 import { toast } from "../../shared/stores/toastStore";
-import { uploadFile } from "./api";
+import { uploadFile } from "../../shared/api/upload";
 
 interface PhotoManagerProps {
   photos: Photo[];

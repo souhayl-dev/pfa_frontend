@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { LayoutGrid, Search, SearchX, SlidersHorizontal, X } from "lucide-react";
 import { errorMessage } from "../../shared/api/http";
 import { cn } from "../../shared/lib/cn";
-import { formatMoney, plural } from "../../shared/lib/format";
+import { CURRENCY, formatMoney, plural } from "../../shared/lib/format";
 import { LISTING_TYPE, LISTING_TYPES } from "../../shared/lib/labels";
 import { Button } from "../../shared/ui/Button";
 import { Alert, EmptyState, Skeleton } from "../../shared/ui/Feedback";
 import { Modal } from "../../shared/ui/Modal";
 import { useFacets, useListings } from "./api";
+import { Destinations } from "./Destinations";
 import { FilterPanel } from "./FilterPanel";
 import { ListingCard } from "./ListingCard";
 import { SORTS, useFilters, type SortKey } from "./useFilters";
@@ -70,7 +71,7 @@ export function ExplorePage() {
   const total = facets.data?.total ?? results.length;
   const typeCounts = facets.data?.types ?? {};
   const anyType = Object.values(typeCounts).reduce((sum, count) => sum + count, 0);
-  const currency = results[0]?.currency ?? "EUR";
+  const currency = CURRENCY;
 
   const chips: { label: string; clear: () => void }[] = [
     ...(filters.q ? [{ label: `« ${filters.q} »`, clear: () => set({ q: null }) }] : []),
@@ -142,6 +143,8 @@ export function ExplorePage() {
           ))}
         </div>
       </div>
+
+      {activeCount === 0 && catalogue.data && <Destinations cities={catalogue.data.cities} onPick={(city) => set({ city })} />}
 
       <div className="mx-auto mt-8 grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[17rem_1fr]">
         <aside className="hidden lg:block">

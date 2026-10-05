@@ -7,6 +7,8 @@ import { ListingPage } from "./features/listing/ListingPage";
 import { LoginPage, RegisterPage } from "./features/auth/AuthPages";
 import { ForgotPasswordPage, ResetPasswordPage, VerifyEmailPage } from "./features/auth/AccountLinkPages";
 import { MyBookingsPage } from "./features/bookings/MyBookingsPage";
+import { BookingPage } from "./features/bookings/BookingPage";
+import { FavoritesPage } from "./features/favorites/FavoritesPage";
 import { ProfilePage } from "./features/profile/ProfilePage";
 import { ProHomePage } from "./features/pro/ProHomePage";
 import { ProviderPage } from "./features/pro/ProviderPage";
@@ -30,7 +32,9 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/bookings" element={<ProtectedRoute><MyBookingsPage /></ProtectedRoute>} />
+            <Route path="/bookings/:id" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/pro" element={<ProtectedRoute><ProHomePage /></ProtectedRoute>} />
             <Route path="/pro/:providerId" element={<ProtectedRoute><ProviderPage /></ProtectedRoute>} />

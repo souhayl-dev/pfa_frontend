@@ -58,7 +58,6 @@ const MESSAGES: [RegExp, string][] = [
   // Listings and units
   [/^listings go live once the provider is approved$/, "L'annonce pourra être mise en ligne une fois votre entreprise validée."],
   [/^this listing has been deleted$/, "Cette annonce a été supprimée."],
-  [/^the currency of a listing cannot change once it is created$/, "La devise d'une annonce ne change plus après sa création."],
   [/^a \w+ listing cannot (offer|get) /, "Cette offre ne correspond pas au type de l'annonce."],
   [/^a \w+ (listing|unit) needs its details object$/, "Les informations propres à ce type sont manquantes."],
   [/units (need|take) /, "Les informations de l'offre ne correspondent pas à son type."],

@@ -8,10 +8,10 @@ import type { Booking, Listing, PlaceBookingRequest, Unit, UnitType } from "../.
 import { formatDateTime, formatMoney, formatTime, todayIso } from "../../shared/lib/format";
 import { PRICING_UNIT } from "../../shared/lib/labels";
 import { useAuthStore } from "../../shared/stores/authStore";
-import { toast } from "../../shared/stores/toastStore";
 import { Button } from "../../shared/ui/Button";
 import { Input, Textarea } from "../../shared/ui/Field";
 import { useQuote, type QuoteParams } from "./api";
+import { clearBookingDraft, readBookingDraft, saveBookingDraft } from "./bookingDraft";
 
 /**
  * How each unit type asks for its period, matching what the API reads:
@@ -44,9 +44,14 @@ export function BookingPanel({ listing, unit }: { listing: Listing; unit: Unit }
   const queryClient = useQueryClient();
   const period = PERIOD[unit.type];
 
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
-  const [guests, setGuests] = useState(1);
+  // What was chosen before leaving to sign in, if it was for this unit.
+  const [draft] = useState(() => {
+    const saved = readBookingDraft();
+    return saved?.unitId === unit.id ? saved : null;
+  });
+  const [start, setStart] = useState(draft?.start ?? "");
+  const [end, setEnd] = useState(draft?.end ?? "");
+  const [guests, setGuests] = useState(Math.min(draft?.guests ?? 1, unit.capacity));
   const [requests, setRequests] = useState("");
 
   const complete = start !== "" && (period.end === null || end !== "");
@@ -69,8 +74,8 @@ export function BookingPanel({ listing, unit }: { listing: Listing; unit: Unit }
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["quote"] });
-      toast.success(`Demande envoyée : réservation ${created.code}`);
-      navigate("/bookings");
+      clearBookingDraft();
+      navigate(`/bookings/${created.id}`, { state: { justBooked: true } });
     },
   });
 
@@ -189,7 +194,14 @@ export function BookingPanel({ listing, unit }: { listing: Listing; unit: Unit }
           Réserver
         </Button>
       ) : (
-        <Button size="lg" className="mt-4 w-full" onClick={() => navigate("/login", { state: { from: location.pathname } })}>
+        <Button
+          size="lg"
+          className="mt-4 w-full"
+          onClick={() => {
+            saveBookingDraft({ unitId: unit.id, start, end, guests });
+            navigate("/login", { state: { from: location.pathname } });
+          }}
+        >
           Se connecter pour réserver
         </Button>
       )}

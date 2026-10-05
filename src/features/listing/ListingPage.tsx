@@ -1,16 +1,23 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Award, Banknote, Building2, Clock, CornerDownRight, FileBadge, Mail, MapPin, MessageSquare, Phone, SearchX, Star, UserRound, UtensilsCrossed } from "lucide-react";
-import type { Listing } from "../../shared/api/types";
+import { ArrowLeft, Award, Banknote, Building2, Clock, CornerDownRight, Expand, FileBadge, Mail, MapPin, MessageSquare, Phone, SearchX, Share2, Star, UserRound, UtensilsCrossed } from "lucide-react";
+import type { Listing, Unit } from "../../shared/api/types";
 import { resolveAssetUrl } from "../../shared/api/http";
+import { FavoriteButton } from "../../shared/components/FavoriteButton";
 import { ListingArt } from "../../shared/components/ListingArt";
 import { cn } from "../../shared/lib/cn";
 import { countryName, formatDate, formatMoney, formatTime, plural } from "../../shared/lib/format";
-import { LISTING_TYPE } from "../../shared/lib/labels";
+import { LISTING_TYPE, PRICING_UNIT } from "../../shared/lib/labels";
+import { toSummary } from "../../shared/stores/favoritesStore";
+import { toast } from "../../shared/stores/toastStore";
+import { Button } from "../../shared/ui/Button";
 import { buttonClass } from "../../shared/ui/buttonClass";
 import { EmptyState, Skeleton, Stars } from "../../shared/ui/Feedback";
 import { useListing, useListingReviews } from "./api";
+import { readBookingDraft } from "./bookingDraft";
 import { BookingPanel } from "./BookingPanel";
+import { Lightbox } from "./Lightbox";
+import { SimilarListings } from "./SimilarListings";
 import { UnitCard } from "./UnitCard";
 
 const UNITS_TITLE: Record<Listing["type"], string> = {
@@ -43,6 +50,7 @@ function facts(listing: Listing): { icon: typeof Star; label: string; value: str
 
 function Gallery({ listing }: { listing: Listing }) {
   const [active, setActive] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
   const photos = listing.photos;
 
   if (photos.length === 0) {
@@ -55,9 +63,17 @@ function Gallery({ listing }: { listing: Listing }) {
 
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_7rem]">
-      <div className="h-64 overflow-hidden rounded-[2rem] bg-sand-100 sm:h-[26rem]">
-        <img key={photos[active].id} src={resolveAssetUrl(photos[active].url)} alt={listing.name} className="h-full w-full animate-fade object-cover" />
-      </div>
+      <button
+        onClick={() => setZoomed(true)}
+        aria-label="Voir les photos en plein écran"
+        className="group relative h-64 cursor-zoom-in overflow-hidden rounded-[2rem] bg-sand-100 sm:h-[26rem]"
+      >
+        <img key={photos[active].id} src={resolveAssetUrl(photos[active].url)} alt={listing.name} className="h-full w-full animate-fade object-cover transition duration-700 group-hover:scale-105" />
+        <span className="absolute right-4 bottom-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-ink-900 shadow-sm">
+          <Expand className="h-3.5 w-3.5" aria-hidden />
+          {plural(photos.length, "photo")}
+        </span>
+      </button>
       {photos.length > 1 && (
         <div className="scrollbar-none flex gap-3 overflow-auto lg:max-h-[26rem] lg:flex-col">
           {photos.map((photo, index) => (
@@ -76,6 +92,7 @@ function Gallery({ listing }: { listing: Listing }) {
           ))}
         </div>
       )}
+      {zoomed && <Lightbox photos={photos} index={active} onChange={setActive} onClose={() => setZoomed(false)} title={listing.name} />}
     </div>
   );
 }
@@ -95,8 +112,34 @@ function Reviews({ listingId }: { listingId: string }) {
   if (!reviews.data?.length) {
     return <EmptyState icon={MessageSquare} title="Pas encore d'avis" text="Les voyageurs peuvent laisser un avis une fois leur réservation terminée." />;
   }
+  const total = reviews.data.length;
+  const average = reviews.data.reduce((sum, review) => sum + review.rating, 0) / total;
   return (
-    <ul className="grid gap-4 md:grid-cols-2">
+    <>
+      <div className="mb-5 flex flex-col gap-5 rounded-3xl border border-sand-200 bg-white p-5 sm:flex-row sm:items-center">
+        <div className="shrink-0 text-center sm:w-36">
+          <p className="font-display text-5xl font-semibold">{average.toFixed(1).replace(".", ",")}</p>
+          <div className="mt-1 flex justify-center">
+            <Stars value={average} />
+          </div>
+          <p className="mt-1 text-xs text-ink-500">{plural(total, "avis", "avis")}</p>
+        </div>
+        <ul className="flex-1 space-y-1.5" aria-label="Répartition des notes">
+          {[5, 4, 3, 2, 1].map((stars) => {
+            const count = reviews.data.filter((review) => review.rating === stars).length;
+            return (
+              <li key={stars} className="flex items-center gap-3 text-sm">
+                <span className="w-8 shrink-0 font-semibold">{stars} ★</span>
+                <span className="h-2 flex-1 overflow-hidden rounded-full bg-sand-100">
+                  <span className="block h-full rounded-full bg-saffron-400" style={{ width: `${(count / total) * 100}%` }} />
+                </span>
+                <span className="w-6 shrink-0 text-right text-ink-500">{count}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <ul className="grid gap-4 md:grid-cols-2">
       {reviews.data.map((review) => (
         <li key={review.id} className="rounded-3xl border border-sand-200 bg-white p-5">
           <div className="flex items-center justify-between gap-3">
@@ -121,14 +164,57 @@ function Reviews({ listingId }: { listingId: string }) {
           )}
         </li>
       ))}
-    </ul>
+      </ul>
+    </>
   );
+}
+
+/** On phones the booking panel sits far below the offers: this bar keeps it one tap away until it is on screen. */
+function MobileBookingBar({ unit, panel }: { unit: Unit; panel: React.RefObject<HTMLElement | null> }) {
+  const [panelVisible, setPanelVisible] = useState(false);
+  useEffect(() => {
+    const element = panel.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(([entry]) => setPanelVisible(entry.isIntersecting), { threshold: 0.15 });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [panel]);
+
+  if (panelVisible) return null;
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-20 flex animate-rise items-center justify-between gap-3 border-t border-sand-200 bg-white/95 px-4 py-3 shadow-lift backdrop-blur lg:hidden">
+      <div className="min-w-0">
+        <p className="text-sm text-ink-500">
+          <span className="text-lg font-extrabold tracking-tight text-ink-900">{formatMoney(unit.basePrice, unit.currency)}</span> / {PRICING_UNIT[unit.pricingUnit]}
+        </p>
+        <p className="truncate text-xs font-semibold text-brand-700">{unit.name}</p>
+      </div>
+      <Button onClick={() => panel.current?.scrollIntoView({ behavior: "smooth", block: "center" })}>Réserver</Button>
+    </div>
+  );
+}
+
+async function share(listing: Listing) {
+  const url = window.location.href;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: listing.name, text: `${listing.name} à ${listing.city} sur Bookly`, url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success("Lien copié.");
+    }
+  } catch (error) {
+    // Closing the share sheet is not a failure.
+    if ((error as Error).name !== "AbortError") toast.error("Le lien n'a pas pu être partagé.");
+  }
 }
 
 export function ListingPage() {
   const { id = "" } = useParams();
   const { data: listing, isLoading, isError } = useListing(id);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Back from signing in, the offer chosen before is selected again.
+  const [selectedId, setSelectedId] = useState<string | null>(() => readBookingDraft()?.unitId ?? null);
+  const panel = useRef<HTMLElement>(null);
 
   if (isLoading) {
     return (
@@ -164,11 +250,21 @@ export function ListingPage() {
   const factList = facts(listing);
 
   return (
-    <div className="mx-auto max-w-7xl animate-fade px-4 py-6 sm:px-6">
-      <Link to="/" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-ink-600 hover:text-ink-900">
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Toutes les annonces
-      </Link>
+    <div className="mx-auto max-w-7xl animate-fade px-4 pt-6 pb-24 sm:px-6 lg:pb-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-600 hover:text-ink-900">
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          <span className="sm:hidden">Retour</span>
+          <span className="hidden sm:inline">Toutes les annonces</span>
+        </Link>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => share(listing)}>
+            <Share2 className="h-4 w-4" aria-hidden />
+            Partager
+          </Button>
+          <FavoriteButton listing={toSummary(listing)} variant="labelled" />
+        </div>
+      </div>
 
       <Gallery listing={listing} />
 
@@ -249,13 +345,16 @@ export function ListingPage() {
         </div>
 
         {selected && (
-          <aside>
+          <aside ref={panel} className="scroll-mt-24">
             <div className="lg:sticky lg:top-24">
               <BookingPanel key={selected.id} listing={listing} unit={selected} />
             </div>
           </aside>
         )}
       </div>
+
+      <SimilarListings listing={listing} />
+      {selected && <MobileBookingBar unit={selected} panel={panel} />}
     </div>
   );
 }

@@ -1,9 +1,11 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { BadgeCheck, MailWarning } from "lucide-react";
+import { BadgeCheck, Camera, LoaderCircle, MailWarning } from "lucide-react";
 import { errorMessage, http } from "../../shared/api/http";
+import { uploadFile } from "../../shared/api/upload";
 import type { Gender, User } from "../../shared/api/types";
-import { initials } from "../../shared/lib/format";
+import { Avatar } from "../../shared/components/Avatar";
+import { cn } from "../../shared/lib/cn";
 import { useAuthStore } from "../../shared/stores/authStore";
 import { toast } from "../../shared/stores/toastStore";
 import { Button } from "../../shared/ui/Button";
@@ -28,7 +30,6 @@ function AccountForm({ user }: { user: User }) {
     username: user.username ?? "",
     phone: user.phone ?? "",
     gender: (user.gender ?? "") as Gender | "",
-    preferredCurrency: user.preferredCurrency,
     notificationsEnabled: user.notificationsEnabled,
   });
   const save = useMutation({
@@ -69,12 +70,6 @@ function AccountForm({ user }: { user: User }) {
           ]}
           value={form.gender}
           onChange={(e) => setForm({ ...form, gender: e.target.value as Gender | "" })}
-        />
-        <Select
-          label="Devise préférée"
-          options={["EUR", "MAD", "USD", "GBP"].map((code) => ({ value: code, label: code }))}
-          value={form.preferredCurrency}
-          onChange={(e) => setForm({ ...form, preferredCurrency: e.target.value })}
         />
       </div>
       <Checkbox
@@ -165,6 +160,61 @@ function PasswordForm() {
   );
 }
 
+/** The photo, with a button over it to choose another. The rest of the profile is sent back unchanged. */
+function ProfilePhoto({ user }: { user: User }) {
+  const setUser = useAuthStore((state) => state.setUser);
+  const input = useRef<HTMLInputElement>(null);
+  const change = useMutation({
+    mutationFn: async (file: File | null) =>
+      (
+        await http.patch<User>("/profile/me", {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          phone: user.phone,
+          gender: user.gender,
+          notificationsEnabled: user.notificationsEnabled,
+          profileImage: file ? await uploadFile(file) : null,
+        })
+      ).data,
+    onSuccess: (updated) => {
+      setUser(updated);
+      toast.success(updated.profileImage ? "Photo mise à jour." : "Photo retirée.");
+    },
+    onError: (error) => toast.error(errorMessage(error)),
+  });
+
+  return (
+    <div className="relative shrink-0">
+      <Avatar firstName={user.firstName} lastName={user.lastName} image={user.profileImage} className="h-20 w-20 rounded-3xl font-display text-2xl" />
+      <button
+        onClick={() => input.current?.click()}
+        disabled={change.isPending}
+        aria-label="Changer la photo de profil"
+        className="absolute -right-2 -bottom-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-sand-50 bg-brand-500 text-white shadow-card transition hover:bg-brand-600 disabled:opacity-60"
+      >
+        {change.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <Camera className="h-4 w-4" aria-hidden />}
+      </button>
+      <input
+        ref={input}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) change.mutate(file);
+          event.target.value = "";
+        }}
+      />
+      {user.profileImage && !change.isPending && (
+        <button onClick={() => change.mutate(null)} className="absolute top-full left-0 mt-3 text-xs font-semibold whitespace-nowrap text-ink-500 hover:text-rose-700 hover:underline">
+          Retirer la photo
+        </button>
+      )}
+    </div>
+  );
+}
+
 function VerifyEmailBanner() {
   const resend = useMutation({
     mutationFn: () => http.post("/auth/resend-verification"),
@@ -189,10 +239,8 @@ export function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <div className="flex items-center gap-4">
-        <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-pine-600 to-pine-900 font-display text-2xl font-semibold text-white">
-          {initials(user.firstName, user.lastName)}
-        </span>
+      <div className={cn("flex items-center gap-5", user.profileImage && "mb-10")}>
+        <ProfilePhoto user={user} />
         <div>
           <h1 className="font-display text-3xl font-semibold tracking-tight">
             {user.firstName} {user.lastName}

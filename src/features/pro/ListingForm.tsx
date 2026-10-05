@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { errorMessage, http } from "../../shared/api/http";
 import type { Listing, ListingRequest, ListingType } from "../../shared/api/types";
 import { cn } from "../../shared/lib/cn";
-import { formatTime } from "../../shared/lib/format";
+import { CURRENCY, formatTime } from "../../shared/lib/format";
 import { LISTING_TYPE, LISTING_TYPES } from "../../shared/lib/labels";
 import { toast } from "../../shared/stores/toastStore";
 import { Button } from "../../shared/ui/Button";
@@ -11,11 +11,10 @@ import { Alert } from "../../shared/ui/Feedback";
 import { Input, Select, Textarea } from "../../shared/ui/Field";
 
 const TIMEZONES = Intl.supportedValuesOf("timeZone").map((zone) => ({ value: zone, label: zone.replace(/_/g, " ") }));
-const CURRENCIES = ["EUR", "MAD", "USD", "GBP"].map((code) => ({ value: code, label: code }));
 
 interface ListingFormProps {
   providerId: string;
-  /** Absent when creating. The type and the currency cannot change afterwards. */
+  /** Absent when creating. The type cannot change afterwards. */
   listing?: Listing;
   readOnly?: boolean;
   onSaved: (listing: Listing) => void;
@@ -33,7 +32,6 @@ export function ListingForm({ providerId, listing, readOnly, onSaved }: ListingF
     city: listing?.city ?? "",
     countryCode: listing?.countryCode ?? "MA",
     timezone: listing?.timezone ?? "Africa/Casablanca",
-    currency: listing?.currency ?? "EUR",
     phone: listing?.phone ?? "",
     email: listing?.email ?? "",
     stars: String(listing?.hotel?.stars ?? ""),
@@ -61,7 +59,6 @@ export function ListingForm({ providerId, listing, readOnly, onSaved }: ListingF
         latitude: listing?.latitude ?? null,
         longitude: listing?.longitude ?? null,
         timezone: form.timezone,
-        currency: form.currency,
         phone: form.phone.trim() || null,
         email: form.email.trim() || null,
         ...(type === "HOTEL" && { hotel: { stars: numberOrNull(form.stars), checkInTime: form.checkInTime || null, checkOutTime: form.checkOutTime || null } }),
@@ -128,14 +125,6 @@ export function ListingForm({ providerId, listing, readOnly, onSaved }: ListingF
           <Input label="Ville" required maxLength={100} value={form.city} onChange={update("city")} />
           <Input label="Pays" hint="Code à 2 lettres : MA, FR, ES..." required pattern="[A-Za-z]{2}" maxLength={2} value={form.countryCode} onChange={update("countryCode")} />
           <Select label="Fuseau horaire" hint="Les horaires de réservation sont lus dans ce fuseau." options={TIMEZONES} value={form.timezone} onChange={update("timezone")} />
-          <Select
-            label="Devise"
-            hint={listing ? "La devise ne change plus après la création." : undefined}
-            options={CURRENCIES}
-            disabled={!!listing}
-            value={form.currency}
-            onChange={update("currency")}
-          />
           <Input label="Téléphone" type="tel" maxLength={30} value={form.phone} onChange={update("phone")} />
           <Input label="E-mail de contact" type="email" value={form.email} onChange={update("email")} />
         </div>
@@ -158,7 +147,7 @@ export function ListingForm({ providerId, listing, readOnly, onSaved }: ListingF
             {type === "CAR_RENTAL_AGENCY" && (
               <>
                 <Input label="Âge minimum du conducteur" type="number" required min={18} max={99} value={form.minDriverAge} onChange={update("minDriverAge")} />
-                <Input label={`Caution (${form.currency})`} type="number" required min={0} step="0.01" value={form.depositAmount} onChange={update("depositAmount")} />
+                <Input label={`Caution (${CURRENCY})`} type="number" required min={0} step="0.01" value={form.depositAmount} onChange={update("depositAmount")} />
               </>
             )}
           </div>

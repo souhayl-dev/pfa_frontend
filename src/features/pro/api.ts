@@ -41,9 +41,3 @@ export function useManagedListing(listingId: string) {
 
 /** Owners and managers change listings; staff only read them and handle bookings. */
 export const canManageListings = (role: MemberRole | undefined) => role === "OWNER" || role === "MANAGER";
-
-export async function uploadFile(file: File): Promise<string> {
-  const body = new FormData();
-  body.append("file", file);
-  return (await http.post<{ url: string }>("/uploads", body)).data.url;
-}
